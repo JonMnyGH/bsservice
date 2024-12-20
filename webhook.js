@@ -1,13 +1,17 @@
 const express = require('express');
 const crypto = require('crypto');
-const axios = require('axios');
+
+// Simulate a database for storing webhook data (in production, use a proper database)
+const webhookEvents = [];
 
 const app = express();
-app.use(express.json()); // Parse incoming JSON payloads
+app.use(express.json()); // Middleware to parse JSON payloads
 
+// Replace this with your Square Webhook Secret
 const SQUARE_WEBHOOK_SECRET = process.env.SQUARE_WEBHOOK_SECRET;
 
-app.post('/webhook', async (req, res) => {
+// Endpoint to receive webhooks from Square
+app.post('/webhook', (req, res) => {
   const signature = req.headers['x-square-signature'];
   const body = JSON.stringify(req.body);
 
@@ -17,29 +21,34 @@ app.post('/webhook', async (req, res) => {
     return res.status(400).send('Invalid signature');
   }
 
+  // Save the event to in-memory storage (or database in production)
+  webhookEvents.push({
+    id: req.body.id, // Unique event ID
+    type: req.body.type, // Event type, e.g., 'order.created'
+    data: req.body.data, // Event payload
+    receivedAt: new Date(), // Timestamp of receipt
+  });
+
   console.log('Webhook received:', req.body);
 
-  // Forward webhook data to your Expo app via REST API or Push Notifications
-  try {
-    // Option 1: Send data to Expo app via your API
-    await axios.post('https://your-draftbit-backend.com/api/updates', req.body);
-
-    // Option 2: Send a push notification to the Expo app
-    // (If using Firebase Cloud Messaging or Expo Notifications)
-    // const { Expo } = require('expo-server-sdk');
-    // const expo = new Expo();
-    // await expo.sendPushNotificationsAsync([{
-    //   to: 'ExponentPushToken[xxxxx]', // Use the recipient's token
-    //   body: 'You have a new update!',
-    //   data: req.body
-    // }]);
-  } catch (err) {
-    console.error('Error forwarding webhook data:', err);
-  }
-
-  // Acknowledge receipt of the webhook
+  // Respond to Square to acknowledge receipt
   res.status(200).send('OK');
 });
 
+// Endpoint for Expo app to poll for updates
+app.get('/api/updates', (req, res) => {
+  const { since } = req.query;
+
+  // Filter events based on the 'since' parameter (timestamp or ID)
+  let filteredEvents = webhookEvents;
+  if (since) {
+    filteredEvents = webhookEvents.filter(event => new Date(event.receivedAt) > new Date(since));
+  }
+
+  // Respond with the filtered events
+  res.json({ updates: filteredEvents });
+});
+
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
