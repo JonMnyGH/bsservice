@@ -18,23 +18,54 @@ const client = new Client({
   environment: 'production', // or 'production' for live data
 });
 
-// Helper function to get the RFC 3339 date range for the past 24 hours in Eastern Time
-const getLast24HoursDateRange = () => {
+const getLast12HoursDateRange = () => {
   const now = new Date();
 
   // Determine the UTC offset for Eastern Time (standard: -5 hours, DST: -4 hours)
   const isDST = now.getTimezoneOffset() < -300; // Daylight Saving Time check
   const offsetHours = isDST ? 4 : 5;
 
-  // Calculate start and end times in UTC
-  const startOfRange = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 24 hours ago
-  const startAt = new Date(startOfRange.getTime() + offsetHours * 3600 * 1000).toISOString();
-  const endAt = new Date(now.getTime() + offsetHours * 3600 * 1000).toISOString();
+  // Adjust current time to Eastern Time
+  const nowInET = new Date(now.getTime() - offsetHours * 3600 * 1000);
 
-  console.log('Generated Last 24 Hours Date Range (Eastern Time):', { startAt, endAt });
+  // Calculate start and end times in Eastern Time
+  const startOfRange = new Date(nowInET.getTime() - 12 * 60 * 60 * 1000); // 12 hours ago in ET
+  const startAt = startOfRange.toISOString();
+  const endAt = nowInET.toISOString();
+
+  console.log('Generated Last 12 Hours Date Range (Eastern Time):', { startAt, endAt });
 
   return { startAt, endAt };
 };
+
+
+const getDateRangeForSpecificDate = (specificDate) => {
+  // Convert the specific date to a Date object in the local timezone
+  const specifiedDate = new Date(specificDate);
+
+  // Determine the UTC offset for Eastern Time (standard: -5 hours, DST: -4 hours)
+  const now = new Date();
+  const isDST = now.getTimezoneOffset() < -300; // Daylight Saving Time check
+  const offsetHours = isDST ? 4 : 5;
+
+  // Start of the day in Eastern Time
+  const startOfDayUTC = new Date(
+    Date.UTC(specifiedDate.getFullYear(), specifiedDate.getMonth(), specifiedDate.getDate())
+  );
+  const startAt = new Date(startOfDayUTC.getTime() + offsetHours * 3600 * 1000).toISOString();
+
+  // End of the day in Eastern Time
+  const endOfDayUTC = new Date(
+    Date.UTC(specifiedDate.getFullYear(), specifiedDate.getMonth(), specifiedDate.getDate() + 1)
+  );
+  const endAt = new Date(endOfDayUTC.getTime() + offsetHours * 3600 * 1000).toISOString();
+
+  console.log('Generated Date Range for Specific Date (Eastern Time):', { startAt, endAt });
+
+  return { startAt, endAt };
+};
+
+
 // Helper function to deeply convert BigInt values to strings
 const stringifyBigInt = (obj) => {
   if (typeof obj === 'bigint') {
@@ -58,7 +89,7 @@ app.get('/api/orders', async (req, res) => {
     const locationIds = locationResponse.result.locations.map(location => location.id);
 
     // Get the date range for the past 24 hours
-    const { startAt, endAt } = getLast24HoursDateRange();
+    const { startAt, endAt } = getLast12HoursDateRange();
 
     // Search orders within the date range
     const response = await client.ordersApi.searchOrders({
