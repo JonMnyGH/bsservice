@@ -59,18 +59,17 @@ const stringifyBigInt = (obj) => {
   }
 };
 
-// Updated /api/orders route
 app.get('/api/orders', async (req, res) => {
   try {
     // Get location IDs from Square
     const locationResponse = await client.locationsApi.listLocations();
     const locationIds = locationResponse.result.locations.map(location => location.id);
 
-    // Get the date range for the past 24 hours
+    // Get the date range for today
     const { startAt, endAt } = getTodaysDateRangeRFC3339();
 
-    // Search orders within the date range
-    const response = await client.ordersApi.searchOrders({
+    // Construct the request payload
+    const requestBody = {
       locationIds,
       query: {
         filter: {
@@ -86,16 +85,30 @@ app.get('/api/orders', async (req, res) => {
           sortOrder: 'DESC',
         },
       },
-    });
-    console.log('Request Body:', JSON.stringify(body, null, 2));
+    };
+
+    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+
+    // Search orders within the date range
+    const response = await client.ordersApi.searchOrders(requestBody);
+
+    // Log the raw response
+    console.log('API Response (raw):', JSON.stringify(response.result, null, 2));
+
+    // Extract orders and convert BigInt values
     const orders = response.result.orders || [];
-    const ordersWithBigIntConverted = stringifyBigInt(orders); // Convert BigInt values to strings
+    const ordersWithBigIntConverted = stringifyBigInt(orders);
+
+    // Return the orders
     res.json(ordersWithBigIntConverted);
   } catch (error) {
     console.error('Error fetching orders:', error);
+
+    // Log Square API response errors, if any
     if (error.response) {
       console.error('Response Data:', error.response.data);
     }
+
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
