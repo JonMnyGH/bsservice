@@ -28,15 +28,20 @@ const getLast12HoursDateRange = () => {
   // Adjust current time to Eastern Time
   const nowInET = new Date(now.getTime() - offsetHours * 3600 * 1000);
 
-  // Calculate start and end times in Eastern Time
-  const startOfRange = new Date(nowInET.getTime() - 12 * 60 * 60 * 1000); // 12 hours ago in ET
-  const startAt = startOfRange.toISOString();
-  const endAt = nowInET.toISOString();
+  // Calculate start time (12 hours ago in ET)
+  const startOfRange = new Date(nowInET.getTime() - 12 * 60 * 60 * 1000);
+
+  // Format both startAt and endAt as YYYY-MM-DD
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  const startAt = formatDate(startOfRange); // Date 12 hours ago
+  const endAt = formatDate(nowInET);       // Current date
 
   console.log('Generated Last 12 Hours Date Range (Eastern Time):', { startAt, endAt });
 
   return { startAt, endAt };
 };
+
 
 
 const getDateRangeForSpecificDate = (specificDate) => {
