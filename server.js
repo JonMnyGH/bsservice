@@ -58,7 +58,6 @@ const stringifyBigInt = (obj) => {
     return obj;
   }
 };
-
 app.get('/api/orders', async (req, res) => {
   try {
     // Get location IDs from Square
@@ -92,26 +91,24 @@ app.get('/api/orders', async (req, res) => {
     // Search orders within the date range
     const response = await client.ordersApi.searchOrders(requestBody);
 
-    // Log the raw response
-    console.log('API Response (raw):', JSON.stringify(response.result, null, 2));
+    // Convert BigInt values to strings before logging
+    const rawResponse = stringifyBigInt(response.result);
 
-    // Extract orders and convert BigInt values
-    const orders = response.result.orders || [];
-    const ordersWithBigIntConverted = stringifyBigInt(orders);
+    console.log('API Response (raw):', JSON.stringify(rawResponse, null, 2));
 
-    // Return the orders
-    res.json(ordersWithBigIntConverted);
+    const orders = rawResponse.orders || [];
+    res.json(orders);
   } catch (error) {
     console.error('Error fetching orders:', error);
 
-    // Log Square API response errors, if any
     if (error.response) {
-      console.error('Response Data:', error.response.data);
+      console.error('Response Data:', stringifyBigInt(error.response.data));
     }
 
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
+
 
 
 // Serve the React app's static files from the 'build' directory
