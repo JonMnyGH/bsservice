@@ -87,7 +87,7 @@ app.get('/api/orders', async (req, res) => {
         },
       },
     });
-
+    console.log('Request Body:', JSON.stringify(body, null, 2));
     const orders = response.result.orders || [];
     const ordersWithBigIntConverted = stringifyBigInt(orders); // Convert BigInt values to strings
     res.json(ordersWithBigIntConverted);
