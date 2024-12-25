@@ -31,11 +31,11 @@ const getLast12HoursDateRange = () => {
   // Calculate start time (12 hours ago in ET)
   const startOfRange = new Date(nowInET.getTime() - 12 * 60 * 60 * 1000);
 
-  // Format both startAt and endAt as YYYY-MM-DD
-  const formatDate = (date) => date.toISOString().split('T')[0];
+  // Format both startAt and endAt in ISO 8601 with time
+  const formatDate = (date) => date.toISOString();
 
-  const startAt = formatDate(startOfRange); // Date 12 hours ago
-  const endAt = formatDate(nowInET);       // Current date
+  const startAt = formatDate(startOfRange); // Start of the range
+  const endAt = formatDate(nowInET);       // Current time
 
   console.log('Generated Last 12 Hours Date Range (Eastern Time):', { startAt, endAt });
 
