@@ -18,26 +18,25 @@ const client = new Client({
   environment: 'production', // or 'production' for live data
 });
 
-const getLast12HoursDateRange = () => {
+const getTodaysDateRange = () => {
   const now = new Date();
 
   // Determine the UTC offset for Eastern Time (standard: -5 hours, DST: -4 hours)
   const isDST = now.getTimezoneOffset() < -300; // Daylight Saving Time check
   const offsetHours = isDST ? 4 : 5;
 
-  // Adjust current time to Eastern Time
+  // Adjust to Eastern Time
   const nowInET = new Date(now.getTime() - offsetHours * 3600 * 1000);
 
-  // Calculate start time (12 hours ago in ET)
-  const startOfRange = new Date(nowInET.getTime() - 12 * 60 * 60 * 1000);
+  // Start of the day in ET
+  const startOfDay = new Date(nowInET.getFullYear(), nowInET.getMonth(), nowInET.getDate());
+  const startAt = new Date(startOfDay.getTime() + offsetHours * 3600 * 1000).toISOString(); // Convert back to UTC
 
-  // Format both startAt and endAt in ISO 8601 with time
-  const formatDate = (date) => date.toISOString();
+  // End of the day in ET
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1); // Last millisecond of the day
+  const endAt = new Date(endOfDay.getTime() + offsetHours * 3600 * 1000).toISOString(); // Convert back to UTC
 
-  const startAt = formatDate(startOfRange); // Start of the range
-  const endAt = formatDate(nowInET);       // Current time
-
-  console.log('Generated Last 12 Hours Date Range (Eastern Time):', { startAt, endAt });
+  console.log('Generated Today’s Date Range (Eastern Time):', { startAt, endAt });
 
   return { startAt, endAt };
 };
@@ -94,7 +93,7 @@ app.get('/api/orders', async (req, res) => {
     const locationIds = locationResponse.result.locations.map(location => location.id);
 
     // Get the date range for the past 24 hours
-    const { startAt, endAt } = getLast12HoursDateRange();
+    const { startAt, endAt } = getTodaysDateRange();
 
     // Search orders within the date range
     const response = await client.ordersApi.searchOrders({
