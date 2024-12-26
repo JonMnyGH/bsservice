@@ -78,6 +78,10 @@ app.get('/api/orders', async (req, res) => {
               endAt,
             },
           },
+          stateFilter: {
+            states: ['COMPLETED'], // Only fetch completed orders
+          },
+          
         },
         sort: {
           sortField: 'CREATED_AT',
