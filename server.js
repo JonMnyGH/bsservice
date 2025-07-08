@@ -112,65 +112,59 @@ app.get('/api/orders', async (req, res) => {
  
 app.put('/api/locations/:locationId', async (req, res) => {
   try {
-    // Log the incoming request
+    // Log the incoming request for debugging
     console.log('Incoming Request:', {
       method: req.method,
       url: req.url,
-      headers: req.headers,
-      body: stringifyBigInt(req.body)
+      body: req.body
     });
 
     const locationId = req.params.locationId;
     const newAddress = req.body.address;
 
-    // Validate that address data is provided and has required fields
+    // Validate incoming address data
     if (!newAddress || typeof newAddress !== 'object') {
       console.error('Invalid address: Address must be an object');
       return res.status(400).json({ error: 'Structured address data is required' });
     }
 
-    const requiredFields = ['address_line_1', 'locality', 'administrative_district_level_1', 'postal_code', 'country'];
-    const missingFields = requiredFields.filter(field => !newAddress[field]);
-    if (missingFields.length > 0) {
-      console.error('Missing required address fields:', missingFields);
-      return res.status(400).json({ error: `Missing required address fields: ${missingFields.join(', ')}` });
-    }
-
     // Retrieve the current location to preserve existing fields
     const retrieveResponse = await client.locationsApi.retrieveLocation(locationId);
     const currentLocation = retrieveResponse.result.location;
-    console.log('Current Location:', stringifyBigInt(currentLocation));
+    console.log('Current Location:', currentLocation);
 
-    // Create the updated location object with only necessary fields
-    const updatedLocation = {
-      name: currentLocation.name, // Preserve name
-      address: {
-        address_line_1: newAddress.address_line_1,
-        address_line_2: newAddress.address_line_2 || '',
-        locality: newAddress.locality,
-        administrative_district_level_1: newAddress.administrative_district_level_1,
-        postal_code: newAddress.postal_code,
-        country: newAddress.country
-      }
+    // Construct the address object with camelCase property names
+    const addressForApi = {
+      addressLine1: newAddress.address_line_1,
+      addressLine2: newAddress.address_line_2 || '',
+      locality: newAddress.locality,
+      administrativeDistrictLevel1: newAddress.administrative_district_level_1,
+      postalCode: newAddress.postal_code,
+      country: newAddress.country
     };
 
-    // Log the exact payload being sent to Square
-    const requestPayload = { location: updatedLocation };
-    console.log('Square API Request:', stringifyBigInt(requestPayload));
+    // Construct the updatedLocation object
+    const updatedLocation = {
+      name: currentLocation.name, // Preserve name
+      address: addressForApi,
+      description: null // Match cURL example, set to null if not provided
+    };
 
-    // Update the location using the Square API
+    // Log the request payload for verification
+    const requestPayload = { location: updatedLocation };
+    console.log('Square API Request Payload:', JSON.stringify(requestPayload, null, 2));
+
+    // Send the update request to Square API
     const updateResponse = await client.locationsApi.updateLocation(locationId, requestPayload);
     const updatedLocationResult = updateResponse.result.location;
 
-    // Log the Square API response
-    console.log('Square API Response:', stringifyBigInt(updatedLocationResult));
-
-    // Send the updated location as the response
+    // Log the response and send it to the client
+    console.log('Square API Response:', updatedLocationResult);
     res.json(updatedLocationResult);
   } catch (error) {
     console.error('Error updating location:', error);
     if (error.response) {
-      console.error('Response Data:', stringifyBigInt(error.response.data));
+      console.error('Response Data:', error.response.data);
     }
     res.status(500).json({ error: 'Failed to update location', details: error.response?.data });
   }
