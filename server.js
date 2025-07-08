@@ -123,11 +123,19 @@ app.put('/api/locations/:locationId', async (req, res) => {
     const locationId = req.params.locationId;
     const newAddress = req.body.address;
 
-    // Validate that address data is provided
-    if (!newAddress) {
-      return res.status(400).json({ error: 'Address data is required' });
+    // Validate that address data is provided and has required fields
+    if (!newAddress || typeof newAddress !== 'object') {
+      console.error('Invalid address: Address must be an object');
+      return res.status(400).json({ error: 'Structured address data is required' });
     }
-  
+
+    const requiredFields = ['address_line_1', 'locality', 'administrative_district_level_1', 'postal_code', 'country'];
+    const missingFields = requiredFields.filter(field => !newAddress[field]);
+    if (missingFields.length > 0) {
+      console.error('Missing required address fields:', missingFields);
+      return res.status(400).json({ error: `Missing required address fields: ${missingFields.join(', ')}` });
+    }
+
     // Retrieve the current location to preserve existing fields
     const retrieveResponse = await client.locationsApi.retrieveLocation(locationId);
     const currentLocation = retrieveResponse.result.location;
@@ -137,7 +145,7 @@ app.put('/api/locations/:locationId', async (req, res) => {
       ...currentLocation,
       address: {
         address_line_1: newAddress.address_line_1,
-        address_line_2: newAddress.address_line_2,
+        address_line_2: newAddress.address_line_2 || '',
         locality: newAddress.locality,
         administrative_district_level_1: newAddress.administrative_district_level_1,
         postal_code: newAddress.postal_code,
@@ -146,7 +154,7 @@ app.put('/api/locations/:locationId', async (req, res) => {
     };
 
     // Log the request being sent to Square API
-    console.error('Square API Request:', {
+    console.log('Square API Request:', {
       locationId,
       body: stringifyBigInt({ location: updatedLocation })
     });
