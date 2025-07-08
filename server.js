@@ -145,7 +145,7 @@ app.put('/api/locations/:locationId', async (req, res) => {
     const updatedLocation = {
       name: currentLocation.name, // Preserve name
       address: {
-        address_line_1: 'newAddress.address_line_1',
+        address_line_1: newAddress.address_line_1,
         address_line_2: newAddress.address_line_2 || '',
         locality: newAddress.locality,
         administrative_district_level_1: newAddress.administrative_district_level_1,
