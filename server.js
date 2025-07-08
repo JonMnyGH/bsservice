@@ -11,11 +11,10 @@ app.use(express.json());
 // Square Access Token
 const SQUARE_ACCESS_TOKEN = process.env.SQUARE_ACCESS_TOKEN;
 
- 
 // Initialize the Square client
 const client = new Client({
+  accessToken: SQUARE_ACCESS_TOKEN,
   accessToken:'EAAAljYE6GZcJFjGzs5xGc4bj3c62iBp3FgWjBKXHAN0HJGLz-CHdh1FrE3EoCd3',
-  environment: 'production', // or 'production' for live data
 });
 
 // Helper function to get the RFC 3339 date range for the past 24 hours in Eastern Time
@@ -43,7 +42,7 @@ const getTodaysDateRangeRFC3339 = () => {
 
   return { startAt, endAt };
 };
- 
+
 // Helper function to deeply convert BigInt values to strings
 const stringifyBigInt = (obj) => {
   if (typeof obj === 'bigint') {
@@ -58,6 +57,7 @@ const stringifyBigInt = (obj) => {
     return obj;
   }
 };
+
 app.get('/api/orders', async (req, res) => {
   try {
     // Get location IDs from Square
@@ -78,7 +78,6 @@ app.get('/api/orders', async (req, res) => {
               endAt,
             },
           },
-                   
         },
         sort: {
           sortField: 'CREATED_AT',
@@ -110,7 +109,28 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
+// New endpoint to update a location
+app.put('/api/locations/:locationId', async (req, res) => {
+  try {
+    const locationId = req.params.locationId;
+    const updatedLocationData = req.body;
 
+    const response = await client.locationsApi.updateLocation(locationId, { location: updatedLocationData });
+
+    const updatedLocation = response.result.location;
+
+    res.json(updatedLocation);
+  } catch (error) {
+    console.error('Error updating location:', error);
+
+    if (error.response) {
+      console.error('Response Data:', stringifyBigInt(error.response.data));
+      res.status(500).json({ error: 'Failed to update location', details: error.response.data });
+    } else {
+      res.status(500).json({ error: 'Failed to update location' });
+    }
+  }
+});
 
 // Serve the React app's static files from the 'build' directory
 app.use(express.static(path.join(__dirname, 'build')));
