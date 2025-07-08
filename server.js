@@ -139,12 +139,13 @@ app.put('/api/locations/:locationId', async (req, res) => {
     // Retrieve the current location to preserve existing fields
     const retrieveResponse = await client.locationsApi.retrieveLocation(locationId);
     const currentLocation = retrieveResponse.result.location;
+    console.log('Current Location:', stringifyBigInt(currentLocation));
 
-    // Create the updated location object, only changing the address
+    // Create the updated location object with only necessary fields
     const updatedLocation = {
-      ...currentLocation,
+      name: currentLocation.name, // Preserve name
       address: {
-        address_line_1: newAddress.address_line_1,
+        address_line_1: 'newAddress.address_line_1',
         address_line_2: newAddress.address_line_2 || '',
         locality: newAddress.locality,
         administrative_district_level_1: newAddress.administrative_district_level_1,
@@ -153,14 +154,12 @@ app.put('/api/locations/:locationId', async (req, res) => {
       }
     };
 
-    // Log the request being sent to Square API
-    console.log('Square API Request:', {
-      locationId,
-      body: stringifyBigInt({ location: updatedLocation })
-    });
+    // Log the exact payload being sent to Square
+    const requestPayload = { location: updatedLocation };
+    console.log('Square API Request:', stringifyBigInt(requestPayload));
 
     // Update the location using the Square API
-    const updateResponse = await client.locationsApi.updateLocation(locationId, { location: updatedLocation });
+    const updateResponse = await client.locationsApi.updateLocation(locationId, requestPayload);
     const updatedLocationResult = updateResponse.result.location;
 
     // Log the Square API response
