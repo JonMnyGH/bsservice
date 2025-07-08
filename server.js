@@ -94,7 +94,7 @@ app.get('/api/orders', async (req, res) => {
     // Convert BigInt values to strings before logging
     const rawResponse = stringifyBigInt(response.result);
 
-    console.log('API Response (raw):', JSON.stringify(rawResponse, null, 2));
+     
 
     const orders = rawResponse.orders || [];
     res.json(orders);
@@ -127,7 +127,7 @@ app.put('/api/locations/:locationId', async (req, res) => {
     if (!newAddress) {
       return res.status(400).json({ error: 'Address data is required' });
     }
-
+  
     // Retrieve the current location to preserve existing fields
     const retrieveResponse = await client.locationsApi.retrieveLocation(locationId);
     const currentLocation = retrieveResponse.result.location;
@@ -146,7 +146,7 @@ app.put('/api/locations/:locationId', async (req, res) => {
     };
 
     // Log the request being sent to Square API
-    console.log('Square API Request:', {
+    console.error('Square API Request:', {
       locationId,
       body: stringifyBigInt({ location: updatedLocation })
     });
