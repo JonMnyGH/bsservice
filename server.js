@@ -38,7 +38,7 @@ const getTodaysDateRangeRFC3339 = () => {
   const startAt = new Date(startOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
   const endAt = new Date(endOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
 
-  console.log('Generated Today’s Date Range (Eastern Time):', { startAt, endAt });
+ 
 
   return { startAt, endAt };
 };
@@ -86,7 +86,7 @@ app.get('/api/orders', async (req, res) => {
       },
     };
 
-    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+ 
 
     // Search orders within the date range
     const response = await client.ordersApi.searchOrders(requestBody);
