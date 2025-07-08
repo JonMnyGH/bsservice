@@ -112,35 +112,20 @@ app.get('/api/orders', async (req, res) => {
  
 app.put('/api/locations/:locationId', async (req, res) => {
   try {
+    // Log the incoming request
+    console.log('Incoming Request:', {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: stringifyBigInt(req.body)
+    });
+
     const locationId = req.params.locationId;
     const newAddress = req.body.address;
 
     // Validate that address data is provided
     if (!newAddress) {
       return res.status(400).json({ error: 'Address data is required' });
-    }
-
-    // Parse the address string (basic splitting, assumes format: "Street, City, State ZIP")
-    let parsedAddress;
-    if (typeof newAddress === 'string') {
-      const parts = newAddress.split(',').map(part => part.trim());
-      if (parts.length < 3) {
-        return res.status(400).json({ error: 'Invalid address format' });
-      }
-      const [street, city, stateZip] = parts;
-      const stateZipParts = stateZip.split(' ');
-      const state = stateZipParts[0];
-      const zip = stateZipParts[1] || '';
-      parsedAddress = {
-        address_line_1: street,
-        address_line_2: '', // Optional, can be added if needed
-        locality: city,
-        administrative_district_level_1: state,
-        postal_code: zip,
-        country: 'US' // Hardcode or derive based on logic
-      };
-    } else {
-      parsedAddress = newAddress; // Assume it's already structured
     }
 
     // Retrieve the current location to preserve existing fields
@@ -151,18 +136,27 @@ app.put('/api/locations/:locationId', async (req, res) => {
     const updatedLocation = {
       ...currentLocation,
       address: {
-        address_line_1: parsedAddress.address_line_1,
-        address_line_2: parsedAddress.address_line_2 || '',
-        locality: parsedAddress.locality,
-        administrative_district_level_1: parsedAddress.administrative_district_level_1,
-        postal_code: parsedAddress.postal_code,
-        country: parsedAddress.country
+        address_line_1: newAddress.address_line_1,
+        address_line_2: newAddress.address_line_2,
+        locality: newAddress.locality,
+        administrative_district_level_1: newAddress.administrative_district_level_1,
+        postal_code: newAddress.postal_code,
+        country: newAddress.country
       }
     };
+
+    // Log the request being sent to Square API
+    console.log('Square API Request:', {
+      locationId,
+      body: stringifyBigInt({ location: updatedLocation })
+    });
 
     // Update the location using the Square API
     const updateResponse = await client.locationsApi.updateLocation(locationId, { location: updatedLocation });
     const updatedLocationResult = updateResponse.result.location;
+
+    // Log the Square API response
+    console.log('Square API Response:', stringifyBigInt(updatedLocationResult));
 
     // Send the updated location as the response
     res.json(updatedLocationResult);
@@ -170,10 +164,8 @@ app.put('/api/locations/:locationId', async (req, res) => {
     console.error('Error updating location:', error);
     if (error.response) {
       console.error('Response Data:', stringifyBigInt(error.response.data));
-      res.status(500).json({ error: 'Failed to update location', details: error.response.data });
-    } else {
-      res.status(500).json({ error: 'Failed to update location' });
     }
+    res.status(500).json({ error: 'Failed to update location', details: error.response?.data });
   }
 });
 
