@@ -11,11 +11,10 @@ app.use(express.json());
 // Square Access Token
 const SQUARE_ACCESS_TOKEN = process.env.SQUARE_ACCESS_TOKEN;
 
- 
 // Initialize the Square client
 const client = new Client({
+  accessToken: SQUARE_ACCESS_TOKEN,
   accessToken:'EAAAljYE6GZcJFjGzs5xGc4bj3c62iBp3FgWjBKXHAN0HJGLz-CHdh1FrE3EoCd3',
-  environment: 'production', // or 'production' for live data
 });
 
 // Helper function to get the RFC 3339 date range for the past 24 hours in Eastern Time
@@ -39,11 +38,11 @@ const getTodaysDateRangeRFC3339 = () => {
   const startAt = new Date(startOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
   const endAt = new Date(endOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
 
-  console.log('Generated Today’s Date Range (Eastern Time):', { startAt, endAt });
+ 
 
   return { startAt, endAt };
 };
- 
+
 // Helper function to deeply convert BigInt values to strings
 const stringifyBigInt = (obj) => {
   if (typeof obj === 'bigint') {
@@ -58,6 +57,7 @@ const stringifyBigInt = (obj) => {
     return obj;
   }
 };
+
 app.get('/api/orders', async (req, res) => {
   try {
     // Get location IDs from Square
@@ -78,7 +78,6 @@ app.get('/api/orders', async (req, res) => {
               endAt,
             },
           },
-                   
         },
         sort: {
           sortField: 'CREATED_AT',
@@ -87,7 +86,7 @@ app.get('/api/orders', async (req, res) => {
       },
     };
 
-    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+ 
 
     // Search orders within the date range
     const response = await client.ordersApi.searchOrders(requestBody);
@@ -95,7 +94,7 @@ app.get('/api/orders', async (req, res) => {
     // Convert BigInt values to strings before logging
     const rawResponse = stringifyBigInt(response.result);
 
-    console.log('API Response (raw):', JSON.stringify(rawResponse, null, 2));
+     
 
     const orders = rawResponse.orders || [];
     res.json(orders);
@@ -110,7 +109,66 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
+ 
+app.put('/api/locations/:locationId', async (req, res) => {
+  try {
+    // Log the incoming request for debugging
+    console.log('Incoming Request:', {
+      method: req.method,
+      url: req.url,
+      body: req.body
+    });
 
+    const locationId = req.params.locationId;
+    const newAddress = req.body.address;
+
+    // Validate incoming address data
+    if (!newAddress || typeof newAddress !== 'object') {
+      console.error('Invalid address: Address must be an object');
+      return res.status(400).json({ error: 'Structured address data is required' });
+    }
+
+    // Retrieve the current location to preserve existing fields
+    const retrieveResponse = await client.locationsApi.retrieveLocation(locationId);
+    const currentLocation = retrieveResponse.result.location;
+    console.log('Current Location:', currentLocation);
+
+    // Construct the address object with camelCase property names
+    const addressForApi = {
+      addressLine1: newAddress.address_line_1,
+      addressLine2: newAddress.address_line_2 || '',
+      locality: newAddress.locality,
+      administrativeDistrictLevel1: newAddress.administrative_district_level_1,
+      postalCode: newAddress.postal_code,
+      country: newAddress.country
+    };
+
+    // Construct the updatedLocation object
+    const updatedLocation = {
+      name: currentLocation.name, // Preserve name
+      address: addressForApi,
+      description: null // Match cURL example, set to null if not provided
+    };
+
+    // Log the request payload for verification
+    const requestPayload = { location: updatedLocation };
+    console.log('Square API Request Payload:', JSON.stringify(requestPayload, null, 2));
+
+    // Send the update request to Square API
+    const updateResponse = await client.locationsApi.updateLocation(locationId, requestPayload);
+    const updatedLocationResult = updateResponse.result.location;
+
+    // Log the response and send it to the client
+    console.log('Square API Response:', updatedLocationResult);
+    res.json(updatedLocationResult);
+  } catch (error) {
+    console.error('Error updating location:', error);
+    if (error.response) {
+      console.error('Response Data:', error.response.data);
+    }
+    res.status(500).json({ error: 'Failed to update location', details: error.response?.data });
+  }
+});
 
 // Serve the React app's static files from the 'build' directory
 app.use(express.static(path.join(__dirname, 'build')));
