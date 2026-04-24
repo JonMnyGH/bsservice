@@ -17,7 +17,7 @@ const client = new Client({
   accessToken:'EAAAljYE6GZcJFjGzs5xGc4bj3c62iBp3FgWjBKXHAN0HJGLz-CHdh1FrE3EoCd3',
 });
 
-// Helper function to get the RFC 3339 date range for the past 24 hours in Eastern Time
+// Helper function to get the RFC 3339 date range for yesterday and today in Eastern Time
 const getTodaysDateRangeRFC3339 = () => {
   const now = new Date();
 
@@ -28,17 +28,15 @@ const getTodaysDateRangeRFC3339 = () => {
   // Adjust current time to Eastern Time
   const nowInET = new Date(now.getTime() - offsetHours * 3600 * 1000);
 
-  // Start of the day in Eastern Time
-  const startOfDayInET = new Date(nowInET.getFullYear(), nowInET.getMonth(), nowInET.getDate());
+  // Start of yesterday in Eastern Time
+  const startOfYesterdayInET = new Date(nowInET.getFullYear(), nowInET.getMonth(), nowInET.getDate() - 1);
 
   // End of the day in Eastern Time (23:59:59.999)
-  const endOfDayInET = new Date(startOfDayInET.getTime() + 24 * 60 * 60 * 1000 - 1);
+  const endOfDayInET = new Date(nowInET.getFullYear(), nowInET.getMonth(), nowInET.getDate(), 23, 59, 59, 999);
 
   // Convert start and end times back to UTC for API
-  const startAt = new Date(startOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
+  const startAt = new Date(startOfYesterdayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
   const endAt = new Date(endOfDayInET.getTime() + offsetHours * 3600 * 1000).toISOString();
-
- 
 
   return { startAt, endAt };
 };
