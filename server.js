@@ -79,7 +79,7 @@ app.get('/api/orders', async (req, res) => {
         },
         sort: {
           sortField: 'CREATED_AT',
-          sortOrder: 'ASC',
+          sortOrder: 'DESC',
         },
       },
     };
